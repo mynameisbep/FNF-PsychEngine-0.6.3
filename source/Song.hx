@@ -86,6 +86,36 @@ class Song
 		this.bpm = bpm;
 	}
 
+	/**
+	 * Gameplay entry point.
+	 *
+	 * When a song ships a pre-compiled `.nse` container, the offline converter also writes a
+	 * "<song>-lazy.json" holding just the chart header and the event list, with an empty
+	 * `notes` array. Loading that instead of the real chart means the game never parses,
+	 * nor allocates, anything per note -- which is what makes charts with 10^8..10^9 notes
+	 * practical. Everything else (stage, characters, voices, events, BPM) is unchanged.
+	 */
+	public static function loadForPlay(jsonInput:String, ?folder:String):SwagSong
+	{
+		#if sys
+		if (ClientPrefs.nseMode != ClientPrefs.NSE_OFF && lazyHeaderExists(jsonInput, folder))
+			return loadFromJson(jsonInput + '-lazy', folder);
+		#end
+		return loadFromJson(jsonInput, folder);
+	}
+
+	#if sys
+	static function lazyHeaderExists(jsonInput:String, ?folder:String):Bool
+	{
+		var song:String = Paths.formatToSongPath(jsonInput) + '-lazy';
+		var fold:String = folder == null ? '' : Paths.formatToSongPath(folder);
+		#if MODS_ALLOWED
+		if (FileSystem.exists(Paths.modsJson(fold + '/' + song))) return true;
+		#end
+		return FileSystem.exists(SUtil.getPath() + Paths.json(fold + '/' + song));
+	}
+	#end
+
 	public static function loadFromJson(jsonInput:String, ?folder:String):SwagSong
 	{
 		var rawJson = null;

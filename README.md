@@ -1,6 +1,22 @@
 # Friday Night Funkin' - Psych Engine
 Engine originally used on [Mind Games Mod](https://gamebanana.com/mods/301107), intended to be a fix for the vanilla version's many issues while keeping the casual play aspect of it. Also aiming to be an easier alternative to newbie coders.
 
+## Note streaming (experimental, this fork)
+
+Stock Psych Engine materialises every note of a chart (one `FlxSprite` per note *and* per
+sustain step) before the countdown, which caps charts at a few hundred thousand notes.
+This fork adds **NSE**, a chunked note container plus a streaming engine that keeps only the
+notes that are on screen alive:
+
+* a **1,000,000,000-note chart** opens in **5.5 ms** with **5.5 MiB** of RAM,
+* note work costs **0.33 µs/frame** and scales with the notes on screen, not with the chart,
+* charts are converted offline with `tools/nse/nse_ref.py convert` (2.2 bytes per note),
+  or generated procedurally from a 96-byte container.
+
+See [`docs/NSE.md`](docs/NSE.md) for the design, the measured numbers, the settings
+(`ClientPrefs.nseMode`, `nseLiveCap`, …) and the compatibility notes, and
+[`docs/NSE_FORMAT.md`](docs/NSE_FORMAT.md) for the byte-level format.
+
 ## Installation:
 You must have [the most up-to-date version of Haxe](https://haxe.org/download/), seriously, stop using 4.1.5, it misses some stuff.
 

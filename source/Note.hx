@@ -245,6 +245,101 @@ class Note extends FlxSprite
 		x += offsetX;
 	}
 
+	// ------------------------------------------------------------------ streaming (NSE) support
+	/** true while the note is owned by NseEngine (its lifetime is managed by the engine) */
+	public var nseManaged:Bool = false;
+	/** 0 = head/tap note, 1 = stretched sustain body, 2 = sustain tail (NSE only) */
+	public var nseKind:Int = 0;
+	/** pool bookkeeping: captured by NotePool right after construction (x already includes offsetX) */
+	public var poolKey:String = null;
+	/** true while this sprite sits in a NotePool free list (guards double releases) */
+	public var nsePooled:Bool = false;
+	public var poolX:Float = 0;
+	public var poolY:Float = 0;
+	public var poolOffsetX:Float = 0;
+	public var poolScaleY:Float = 1;
+
+	/** true for the last piece of a hold (vanilla re-tests `curAnim.name.endsWith('end')` every frame) */
+	public inline function isHoldEnd():Bool
+	{
+		if (nseManaged) return nseKind == 2;
+		return animation.curAnim != null && animation.curAnim.name.endsWith('end');
+	}
+
+	/**
+	 * Re-initialises this note so it can represent another note of the *same* lane, kind
+	 * and note type (that is what NotePool guarantees). Graphics, animation data, the
+	 * colour-swap shader and the hitboxes are reused, so this costs ~40 field writes
+	 * instead of an atlas load + 4 animation rebuilds.
+	 *
+	 * kind: 0 = head/tap note, 1 = stretched sustain body, 2 = sustain tail
+	 */
+	public function recycleTo(strumTime:Float, lane:Int, mustPress:Bool, span:Float, kind:Int, ?prev:Note = null):Void
+	{
+		noteData = lane;
+		nseKind = kind;
+		isSustainNote = kind != 0;
+		// reset the scroll multiplier first (its setter rescales holds), the scale is set below
+		if (multSpeed != 1) multSpeed = 1;
+		this.mustPress = mustPress;
+		sustainLength = span;
+		this.strumTime = strumTime;
+		inEditor = false;
+
+		if (prev != null) prev.nextNote = this;
+		prevNote = (prev == null) ? this : prev;
+		nextNote = null;
+		tail = [];
+		parent = null;
+
+		x = poolX;
+		y = poolY;
+		offsetX = poolOffsetX;
+		offsetY = 0;
+		offsetAngle = 0;
+		scale.y = poolScaleY;
+		angle = 0;
+		clipRect = null;
+		distance = 2000;
+
+		alpha = (kind != 0) ? 0.6 : 1;
+		multAlpha = alpha;
+		hitsoundDisabled = (kind != 0);
+		flipY = (kind != 0) && ClientPrefs.downScroll;
+		copyAngle = (kind == 0);
+		copyX = true;
+		copyY = true;
+		copyAlpha = true;
+		ignoreNote = (kind != 0) || (noteType == 'Hurt Note');
+		blockHit = false;
+
+		wasGoodHit = false;
+		hitByOpponent = false;
+		tooLate = false;
+		canBeHit = false;
+		spawned = false;
+		missHealth = (kind != 0) ? 0.1 : (noteType == 'Hurt Note' ? 0.3 : 0.0475);
+		earlyHitMult = (kind == 0) ? 1 : 0.5;
+		lateHitMult = 1;
+
+		revive();
+		exists = true;
+		visible = true;
+		active = true;
+		scrollFactor.set(1, 1);
+
+		switch (kind)
+		{
+			case 0:
+				animation.play(colArray[lane % 4] + 'Scroll', true);
+			case 1:
+				animation.play(colArray[lane % 4] + 'hold', true);
+			default:
+				animation.play(colArray[lane % 4] + 'holdend', true);
+		}
+		updateHitbox();
+	}
+
 	var lastNoteOffsetXForPixelAutoAdjusting:Float = 0;
 	var lastNoteScaleToo:Float = 1;
 	public var originalHeightForCalcs:Float = 6;

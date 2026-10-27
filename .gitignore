@@ -19,3 +19,9 @@ export/*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+### NSE tooling
+tools/refbench/refbench
+tools/refbench/refbench_asan
+tools/refbench/*.o
+__pycache__/
+*.pyc
