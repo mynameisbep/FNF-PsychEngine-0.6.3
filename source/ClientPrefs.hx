@@ -57,6 +57,24 @@ class ClientPrefs {
 		'opponentplay' => false
 	];
 
+	// ---------------------------------------------------------------- Note Stream Engine (NSE)
+	// NSE streams charts instead of materialising one object per note. It removes the
+	// hard cap that used to be "how many notes fit in RAM" (see docs/NOTE_STREAMING.md).
+	public static inline var NSE_OFF:Int = 0;      // always use the classic loader
+	public static inline var NSE_AUTO:Int = 1;     // stream only big charts (default)
+	public static inline var NSE_ALWAYS:Int = 2;   // stream everything that has an .nse/.json
+	public static var nseMode:Int = NSE_AUTO;
+	/** maximum simultaneously alive note sprites; <= 0 disables the cap (may tank FPS) */
+	public static var nseLiveCap:Int = 4096;
+	/** auto mode: charts with at least this many notes are streamed */
+	public static var nseThresholdNotes:Int = 12000;
+	/** auto mode: charts whose JSON is at least this big are streamed */
+	public static var nseThresholdBytes:Int = 4 * 1024 * 1024;
+	/** collapse every sustain into 2 sprites (body + tail) instead of one per step */
+	public static var nseSustainSpans:Bool = true;
+	/** show NSE counters in the debug overlay */
+	public static var nseDebugStats:Bool = false;
+
 	public static var comboOffset:Array<Int> = [0, 0, 0, 0];
 	public static var ratingOffset:Int = 0;
 	public static var sickWindow:Int = 45;
@@ -123,6 +141,12 @@ class ClientPrefs {
 		FlxG.save.data.achievementsMap = Achievements.achievementsMap;
 		FlxG.save.data.henchmenDeath = Achievements.henchmenDeath;
 
+		FlxG.save.data.nseMode = nseMode;
+		FlxG.save.data.nseLiveCap = nseLiveCap;
+		FlxG.save.data.nseThresholdNotes = nseThresholdNotes;
+		FlxG.save.data.nseThresholdBytes = nseThresholdBytes;
+		FlxG.save.data.nseSustainSpans = nseSustainSpans;
+		FlxG.save.data.nseDebugStats = nseDebugStats;
 		FlxG.save.data.ratingOffset = ratingOffset;
 		FlxG.save.data.sickWindow = sickWindow;
 		FlxG.save.data.goodWindow = goodWindow;
@@ -229,6 +253,24 @@ class ClientPrefs {
 			comboOffset = FlxG.save.data.comboOffset;
 		}
 		
+		if(FlxG.save.data.nseMode != null) {
+			nseMode = FlxG.save.data.nseMode;
+		}
+		if(FlxG.save.data.nseLiveCap != null) {
+			nseLiveCap = FlxG.save.data.nseLiveCap;
+		}
+		if(FlxG.save.data.nseThresholdNotes != null) {
+			nseThresholdNotes = FlxG.save.data.nseThresholdNotes;
+		}
+		if(FlxG.save.data.nseThresholdBytes != null) {
+			nseThresholdBytes = FlxG.save.data.nseThresholdBytes;
+		}
+		if(FlxG.save.data.nseSustainSpans != null) {
+			nseSustainSpans = FlxG.save.data.nseSustainSpans;
+		}
+		if(FlxG.save.data.nseDebugStats != null) {
+			nseDebugStats = FlxG.save.data.nseDebugStats;
+		}
 		if(FlxG.save.data.ratingOffset != null) {
 			ratingOffset = FlxG.save.data.ratingOffset;
 		}
